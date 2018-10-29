@@ -271,7 +271,7 @@ export class VideoCall extends React.Component {
 
   static renderBack = (navigation,onNavigateBack) => (
   <TouchableOpacity onPress={() => VideoCall.onBackButtonPressed(navigation,onNavigateBack)}>
-    <Avatar style={styles.back} rkType='small' img={require('../../assets/icons/backicon.png')}/>
+    <Avatar style = {{marginLeft: 10}} img={require('../../assets/icons/back.jpeg')}/>
   </TouchableOpacity>
   );
 
@@ -296,7 +296,6 @@ export class VideoCall extends React.Component {
 
   disconnect(){
     socket.close();
-    this.props.navigation.navigate('Login1');
   }
 
   press(event) {
@@ -319,11 +318,6 @@ export class VideoCall extends React.Component {
       }
       localStream = stream;
       container.setState({selfViewSrc: stream.toURL()});
-
-      for (const id in pcPeers) {
-        const pc = pcPeers[id];
-        pc && pc.addStream(localStream);
-      }
     });
   }
 
@@ -368,7 +362,7 @@ export class VideoCall extends React.Component {
  
   render = () => (
     <View style={styles.container}>
-      <Button color="gray" title="SHOW MY SCREEN" onPress={()=>this.switchVideoType()} />
+      {/* <Button color="gray" title="SHOW MY SCREEN" onPress={()=>this.switchVideoType()} /> */}
       {/* {this.state.textRoomConnected && this.renderTextRoom()} */}
       { this.state.status == 'ready' ? this.press() : null  }
       <View style={styles.chatZone}>

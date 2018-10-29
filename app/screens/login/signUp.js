@@ -3,7 +3,8 @@ import {
   View,
   Image,
   Keyboard,
-  Button
+  Button,
+  Text
 } from 'react-native';
 import {
   RkButton,
@@ -18,7 +19,6 @@ import { scaleVertical } from '../../utils/scale';
 import BKMessProtocolClient from '../../../NativePackage'
 
 import { DeviceEventEmitter } from 'react-native';
-
 
 
 export class SignUp extends React.Component {
@@ -37,12 +37,12 @@ export class SignUp extends React.Component {
       isDupUser: 0,
       isSuccess: 0,
     }
-    DeviceEventEmitter.addListener('LISTENER_RES_REGISTRATION', ({res}) => {this.processRes(res)});
+    DeviceEventEmitter.addListener('LISTENER_RES_REGISTRATION', ({res}) => this.processRes(res));
   }
 
   processRes(res){
     const resjson = JSON.parse(res);
-    if (resjson.output.isExistedUser === "True"){
+    if (resjson.output.isExistedUser != "True"){
       this.setState({
         isSuccess : 1,
       })
@@ -67,68 +67,66 @@ export class SignUp extends React.Component {
     this.setState({
       isDiffPass: 0,
       isDupUser: 0,
-      isSuccess: 0
+      isSuccess: 0,
+      isNull: 0
     })
-    if (this.state.pass !== this.state.confirmpass){
-       this.setState({
-         isDiffPass : 1
-       })
+    if (this.state.username == '' || this.state.fullname == '' || this.state.pass == '' || this.state.confirmpass == ''){
+      this.setState({
+        isNull : 1
+      })
     }
-    BKMessProtocolClient.sendRequest(" {\"type\" : \"GET_REGISTRATION\", \"input\" : {\"username\": \"" + this.state.username + "\",\"fullname\": \"" + this.state.fullname + "\", \"password\": \"" + this.state.pass + "\"}} ");
+    else if (this.state.pass != this.state.confirmpass){
+      this.setState({
+        isDiffPass : 1
+      })
+   }
+   else {
+      BKMessProtocolClient.sendRequest(" {\"type\" : \"GET_REGISTRATION\", \"input\" : {\"user_name\": \"" + this.state.username + "\",\"full_name\": \"" + this.state.fullname + "\", \"password\": \"" + this.state.pass + "\"}} ");
+    }
   };
 
   onSignInButtonPressed = () => {
     this.props.navigation.navigate('Login1');
   };
 
-  renderPassFailed(){
+  renderResult(){
     if (this.state.isDiffPass)
-      return (<RkText>Password is different after two times entering!!!</RkText>)
-  }
-
-  renderDupUser(){
+      return (<Text style={{color: 'red'}}>Password is different after two times entering!!!</Text>)
     if (this.state.isDupUser)
-      return (<RkText>User name is used by another user!!!</RkText>)
-  }
-
-  renderSuccessful(){
-    if (this.state.isDupUser)
-      return (<RkText>Registration is successful!</RkText>)
+      return (<Text style={{color: 'red'}}>User name is used by another user!!!</Text>)
+    if (this.state.isSuccess)
+      return (<Text style={{color: 'red'}}>Registration is successful!</Text>)
+    if (this.state.isNull)
+      return (<Text style={{color: 'red'}}>All fields must be filled!!!</Text>)
   }
 
   render = () => (
     <RkAvoidKeyboard
-      style={styles.screen}
-      onStartShouldSetResponder={() => true}
-      onResponderRelease={() => Keyboard.dismiss()}>
-      <View style={{ alignItems: 'center' }}>
-        {this.renderImage()}
-        <RkText rkType='h1'>Registration</RkText>
-      </View>
-      <View style={styles.content}>
-        <View>
-        <RkTextInput rkType='rounded' placeholder='Username' onChangeText={text => this.setState({username:text})} />
+    onStartShouldSetResponder={() => true}
+    onResponderRelease={() => Keyboard.dismiss()}
+    style={styles.screen}>
+    <View style={styles.container}>
+    <Text style={{fontWeight: 'bold', fontSize: 25, marginBottom : 15, color : '#000099'}}>REGISTRATION</Text>
+    <RkTextInput rkType='rounded' placeholder='Username' onChangeText={text => this.setState({username:text})} />
         <RkTextInput rkType='rounded' placeholder='FullName' onChangeText={text => this.setState({fullname:text})} />
         <RkTextInput rkType='rounded' placeholder='Password' onChangeText={text => this.setState({pass:text})} secureTextEntry />
         <RkTextInput rkType='rounded' placeholder='Confirm Password' onChangeText={text => this.setState({confirmpass:text})} secureTextEntry />
-        {this.renderPassFailed()}
-        {this.renderDupUser()}
-        {this.renderSuccessful()}
-        <RkButton
+        {this.renderResult()}
+        <RkButton style = {{marginTop: 15}}
           onPress={() => this.onSignUpButtonPressed()}
         >
-          LOGIN
+          SIGN IN
         </RkButton>
-        </View>
         <View style={styles.footer}>
           <View style={styles.textRow}>
             <RkButton rkType='clear' onPress={this.onSignInButtonPressed}>
-              <RkText rkType='header6'>Sign in now</RkText>
+            <Text style={{fontWeight: 'bold', fontSize: 17, marginBottom : 5, color : '#000099'}}>Log in now</Text>
             </RkButton>
           </View>
         </View>
-      </View>
+    </View>
     </RkAvoidKeyboard>
+
   )
 }
 
@@ -137,15 +135,22 @@ const styles = RkStyleSheet.create(theme => ({
     padding: 16,
     flex: 1,
     justifyContent: 'space-around',
-    backgroundColor: theme.colors.screen.base,
+    backgroundColor: "FF9966",
   },
   image: {
     marginBottom: 10,
     height: scaleVertical(77),
     resizeMode: 'contain',
   },
+
+  container: {
+    paddingHorizontal: 17,
+    paddingBottom: scaleVertical(22),
+    alignItems: 'center',
+    flex: -1,
+  },
   content: {
-    justifyContent: 'space-between',
+    justifyContent: 'center',
   },
   save: {
     marginVertical: 20,
@@ -157,6 +162,7 @@ const styles = RkStyleSheet.create(theme => ({
     justifyContent: 'space-around',
   },
   footer: {
+    marginTop: 40,
     justifyContent: 'flex-end',
   },
   textRow: {

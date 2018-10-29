@@ -150,6 +150,21 @@ public class BKMessProtocolClient extends ReactContextBaseJavaModule {
 				case "RES_REGISTRATION":
 					sendEvent("LISTENER_RES_REGISTRATION",params);
 					break;
+				case "RES_CREATE_GROUP":
+					sendEvent("LISTENER_RES_CREATE_GROUP",params);
+					break;
+				case "RES_GET_OUTSIDE_FRIEND":
+					sendEvent("LISTENER_RES_GET_OUTSIDE_FRIEND",params);
+					break;
+				case "RES_LIST_FRIEND":
+					sendEvent("LISTENER_RES_LIST_FRIEND",params);
+					break;
+				case "RES_GET_MEMBERS_OF_GROUP":
+					sendEvent("LISTENER_RES_GET_MEMBERS_OF_GROUP",params);
+					break;
+				case "NOTIFICATION_DELETE":
+					sendEvent("LISTENER_NOTIFICATION_DELETE",params);
+					break;
 			}
 		}
 		catch (ParseException e)

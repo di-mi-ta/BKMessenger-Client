@@ -4,6 +4,7 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
+  Text
 } from 'react-native';
 import _ from 'lodash';
 import {
@@ -34,14 +35,14 @@ export class ChatList extends React.Component {
   static renderNavigationTitle = (withReceiverName) => (
     <TouchableOpacity>
       <View style={styles.header}>
-        <RkText rkType='secondary3 secondaryColor'>BKMessenger</RkText>
+        <Text style = {{fontWeight : "bold",fontSize: 20, color : '#000099'}}>BKMessenger</Text>
       </View>
     </TouchableOpacity>
   );
 
   static renderCreateGroup = (navigation,user_name) => (
     <TouchableOpacity onPress={() => ChatList.onCreateGroupPressed(navigation, user_name)}>
-      <Avatar style={styles.avatar} rkType='small' img={require('../../assets/icons/createGroup.png')}/>
+      <Avatar style = {{marginRight: 10}} img={require('../../assets/icons/group.png')}/>
     </TouchableOpacity>
   );
 
@@ -51,13 +52,13 @@ export class ChatList extends React.Component {
 
   static renderFriends = (navigation,user_name) => (
     <TouchableOpacity onPress={() => ChatList.onFriendsPressed(navigation,user_name)}>
-      <Avatar style={styles.back} rkType='small' img={require('../../assets/icons/friends.jpg')}/>
+      <Avatar style = {{marginLeft: 10}} img={require('../../assets/icons/friends.png')}/>
     </TouchableOpacity>
   );
 
   static onFriendsPressed = (navigation,user_name) => {
     navigation.navigate('Friends',{username : user_name})
- };
+  };
 
 
   constructor(props){
@@ -71,7 +72,6 @@ export class ChatList extends React.Component {
       },
     }
     BKMessProtocolClient.sendRequest(" {\"type\" : \"GET_INBOX\", \"input\" : {\"user_name\": \"" + this.state.username + "\" }} ");
-    BKMessProtocolClient.receiveMessages();
     DeviceEventEmitter.addListener('LISTENER_RES_INBOX', ({res}) => {this.processRes(res)});
   }
 
@@ -112,7 +112,7 @@ export class ChatList extends React.Component {
 
 
   onItemPressed = (item) => {
-    const navigationParams = {  onNavigateBack: this.handleOnNavigateBack.bind(this), username: this.state.username ,withReceiverName: item.Receiver , idRec : item.idReceiver };
+    const navigationParams = {  onNavigateBack: this.handleOnNavigateBack.bind(this), username: this.state.username ,withReceiverName: item.Receiver , idRec : item.idReceiver, groupID: item.group_id };
     this.props.navigation.navigate('Chat', navigationParams);
   };
 
@@ -141,7 +141,7 @@ export class ChatList extends React.Component {
     return (
       <TouchableOpacity onPress={() => this.onItemPressed(item)}>
         <View style={styles.container}>
-          <Avatar rkType='circle' style={styles.avatar} img={{uri: 'https://facebook.github.io/react-native/docs/assets/favicon.png'}} />
+          <Avatar rkType='circle' style={styles.avatar} img={require('../../assets/icons/ozil.jpg')} />
           <View style={styles.content}>
             <View style={styles.contentHeader}>
               <RkText rkType='header5'>{`${item.Receiver}`}</RkText>
@@ -157,28 +157,6 @@ export class ChatList extends React.Component {
       </TouchableOpacity>
     );
   };
-
-  // renderItem = ({ item }) => {
-  //   const last = item.messages[item.messages.length - 1];
-  //   return (
-  //     <TouchableOpacity onPress={() => this.onItemPressed(item)}>
-  //       <View style={styles.container}>
-  //         <Avatar rkType='circle' style={styles.avatar} img={{uri: 'https://facebook.github.io/react-native/docs/assets/favicon.png'}} />
-  //         <View style={styles.content}>
-  //           <View style={styles.contentHeader}>
-  //             <RkText rkType='header5'>{`${item.withUser.firstName} ${item.withUser.lastName}`}</RkText>
-  //             <RkText rkType='secondary4 hintColor'>
-  //               {moment().add(last.time, 'seconds').format('LT')}
-  //             </RkText>
-  //           </View>
-  //           <RkText numberOfLines={2} rkType='primary3 mediumLine' style={{ paddingTop: 5 }}>
-  //             {last.text}
-  //           </RkText>
-  //         </View>
-  //       </View>
-  //     </TouchableOpacity>
-  //   );
-  // };
 
   render = () => (
     <FlatList

@@ -43,6 +43,7 @@ export default class App extends React.Component {
   constructor(props){
     super(props);
     BKMessProtocolClient.connectToServer("192.168.100.14", 2018,(msg) => {}, (err) => {});
+    BKMessProtocolClient.listenMess();
   }
   state = {
     isLoaded: false,

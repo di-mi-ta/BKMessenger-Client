@@ -4,7 +4,8 @@ import {
   Image,
   Dimensions,
   Keyboard,
-  KeyboardAvoidingView
+  KeyboardAvoidingView,
+  Text
 } from 'react-native';
 import {
   RkButton,
@@ -43,8 +44,9 @@ export class LoginV1 extends React.Component {
 
   getThemeImageSource = (theme) => (
     theme.name === 'light' ?
-      require('../../assets/images/backgroundLoginV1.png') : require('../../assets/images/backgroundLoginV1DarkTheme.png')
-  );
+      require('../../assets/images/backgroundLoginV1DarkTheme.png') : require('../../assets/images/backgroundLoginV1DarkTheme.png')
+      // require('../../assets/images/backgroundLoginV1.png') : require('../../assets/images/backgroundLoginV1DarkTheme.png')
+    );
 
   renderImage = () => {
     const screenSize = Dimensions.get('window');
@@ -63,7 +65,6 @@ export class LoginV1 extends React.Component {
 
   onLoginButtonPressed = () => {
     BKMessProtocolClient.sendRequest(" {\"type\" : \"CHECK_LOGIN\", \"input\" : {\"user_name\": \"" + this.state.username + "\", \"password\": \"" + this.state.pass + "\"  , \"IpAddr\": \"" + this.state.pass + "\" }} ");
-    BKMessProtocolClient.receiveMessages();
     DeviceEventEmitter.addListener('LISTENER_RES_CHECK_LOGIN', ({res}) => this.processRes(res));
   };
 
@@ -97,15 +98,15 @@ export class LoginV1 extends React.Component {
         <RkTextInput rkType='rounded' placeholder='Username' onChangeText={text => this.setState({username:text})} />
         <RkTextInput rkType='rounded' placeholder='Password' onChangeText={text => this.setState({pass:text})} secureTextEntry />
         {this.renderLoginFailed()}
-        <RkButton
+        <RkButton style = {{marginTop: 15}}
           onPress={this.onLoginButtonPressed}
         >
           LOGIN
         </RkButton>
         <View style={styles.footer}>
           <View style={styles.textRow}>
-            <RkButton rkType='clear'>
-              <RkText rkType='header6' onPress={this.onSignUpButtonPressed}>Sign up</RkText>
+            <RkButton rkType='clear' onPress={this.onSignUpButtonPressed}>
+            <Text style={{fontWeight: 'bold', fontSize: 17, marginBottom : 5, color : '#FFFFFF'}}>SIGN IN</Text>
             </RkButton>
           </View>
         </View>
@@ -118,11 +119,7 @@ const styles = RkStyleSheet.create(theme => ({
   screen: {
     flex: 1,
     alignItems: 'center',
-    backgroundColor: theme.colors.screen.base,
-  },
-  image: {
-    resizeMode: 'cover',
-    marginBottom: scaleVertical(10),
+    backgroundColor: '#000066',
   },
   container: {
     paddingHorizontal: 17,

@@ -29,18 +29,22 @@ import { DocumentPicker, DocumentPickerUtil } from 'react-native-document-picker
 
 const moment = require('moment');
 
+
+
 export class Chat extends React.Component {
   static navigationOptions = ({ navigation }) => {
     const withReceiverName = navigation.state.params ? navigation.state.params.withReceiverName : undefined;
     const idRec = navigation.state.params ? navigation.state.params.idRec : undefined;
     const user_name = navigation.state.params ? navigation.state.params.username : undefined;
     const onNavigateBack = navigation.state.params ? navigation.state.params.onNavigateBack : undefined;
+    const groupID = navigation.state.params ? navigation.state.params.groupID : undefined;
     return ({
         headerLeft: Chat.renderBack(navigation,onNavigateBack),
-        headerTitle: Chat.renderNavigationTitle(withReceiverName),
+        headerTitle: Chat.renderNavigationTitle(navigation,withReceiverName,groupID,user_name, onNavigateBack),
         headerRight: Chat.renderVideoCall(navigation,user_name,idRec),
     });
   };
+
 
   constructor(props) {
     super(props);
@@ -48,13 +52,15 @@ export class Chat extends React.Component {
       username : this.props.navigation.getParam('username', undefined),
       withReceiverName : this.props.navigation.getParam('withReceiverName', undefined),
       idRec : this.props.navigation.getParam('idRec', undefined),
+      groupID : this.props.navigation.getParam('groupID', undefined),
+      onNavigateBack : this.props.navigation.getParam('onNavigateBack', undefined),
       data: [],
       isProcessedItem: 0,
-      itemMessToDelete: null
+      itemMessToDelete: null,
     };
-    BKMessProtocolClient.sendRequest(" {\"type\" : \"GET_MESSAGE\", \"input\" : {\"user_name\": \"" + this.state.username + "\", \"idReceiver\": " + this.state.idRec + "}} ");
-    BKMessProtocolClient.listenMess();
+    BKMessProtocolClient.sendRequest(" {\"type\" : \"GET_MESSAGE\", \"input\" : {\"user_name\": \"" + this.state.username + "\", \"idReceiver\": " + this.state.idRec + "}} ");  
     DeviceEventEmitter.addListener('LISTENER_RES_MESSAGE', ({res}) => {this.processRes(res)});
+    DeviceEventEmitter.addListener('LISTENER_NOTIFICATION_DELETE', ({res}) => {this.processIsDeleted(res)});
     DeviceEventEmitter.addListener('LISTENER_NEW_MESSAGES', ({res}) => {this.processNewMessage(res)});
     DeviceEventEmitter.addListener('LISTENER_RES_CONFIRM_VC', ({res}) => {this.processComfirmVideoCall(res)});
     DeviceEventEmitter.addListener('LISTENER_GET_CONFIRM_VIDEO_CALL', ({res}) => {this.onReceiveRequestVideoCall(res)});
@@ -69,6 +75,26 @@ export class Chat extends React.Component {
       )
     });
     DeviceEventEmitter.addListener('LISTENER_RES_GET_CONTENT_FILE', ({res}) => {this.processGetContentFile(res)});
+  }
+
+  processIsDeleted(res){
+    const _res = JSON.parse(res);
+    if (_res.output.member_name == this.state.username){
+      Alert.alert(
+        ':( :( :( :(',
+        'You is deleted out of group by '+ _res.output.member_do + ' !!!',
+        [
+          {text: 'OK', onPress: () => this.onReturn(_res)},
+        ],
+        { cancelable:false }
+      )
+    }
+
+  }
+
+  onReturn(res){
+    this.state.onNavigateBack();
+    this.props.navigation.goBack();
   }
 
   onReceiveRequestVideoCall(res){
@@ -104,6 +130,7 @@ export class Chat extends React.Component {
   processRes(res){
     const listMess = JSON.parse(res);
     this.setState({
+      groupID : listMess.output.groupID,
       data: listMess.output.messages
     })
   }
@@ -111,13 +138,10 @@ export class Chat extends React.Component {
 
   processNewMessage(res){
     const info = JSON.parse(res);
-    if (info.output.idReceiver == this.state.idRec){
-      if (info.output.message.type !== "text"){
-        BKMessProtocolClient.sendRequest(" {\"type\" : \"GET_CONTENT\", \"input\" : {\"idFile\": " + info.output.message.idMess + "}} ");
-      }
-      
-      this.state.data.push(info.output.message);
+    if (info.output.message.type != "text"){
+      BKMessProtocolClient.sendRequest(" {\"type\" : \"GET_CONTENT\", \"input\" : {\"idFile\": " + info.output.message.idMess + "}} ");
     }
+    this.state.data.push(info.output.message);
   }
 
   processGetContentFile(res){
@@ -155,45 +179,54 @@ export class Chat extends React.Component {
   };
 
   static onBackButtonPressed = (navigation,onNavigateBack) => {
-        BKMessProtocolClient.closeListenMess();
+        //BKMessProtocolClient.closeListenMess();
         onNavigateBack();
         navigation.goBack();
   };
 
-  static renderNavigationTitle = (withReceiverName) => (
-    <TouchableOpacity>
-      <View style={styles.header}>
-        <RkText rkType='header5'>{`${withReceiverName}`}</RkText>
-        <RkText rkType='secondary3 secondaryColor'>Online</RkText>
-      </View>
-    </TouchableOpacity>
-  );
-
-  static onAddGroupPressed = (navigation,user_name,idRec) => {
-    navigation.navigate('AddGroup',{username: user_name, idRec: idRec})
+  
+  static renderNavigationTitle = (navigation,withReceiverName,groupID,user_name,onNavigateBack) => {
+    if (groupID != null)
+      return(
+        <TouchableOpacity onPress= {() => {navigation.navigate('ManageGroup',{groupName: withReceiverName, groupID: groupID, username: user_name, onNavigateBack: onNavigateBack})}}>
+          <View style={styles.header}>
+            <RkText rkType='header5'>{`${withReceiverName}`}</RkText>
+            <RkText style = {{color: "green"}} rkType='secondary3'>Online</RkText>
+          </View>
+        </TouchableOpacity>
+      )
+    else {
+      return(
+        <TouchableOpacity>
+          <View style={styles.header}>
+            <RkText rkType='header5'>{`${withReceiverName}`}</RkText>
+            <RkText style = {{color: "green"}} rkType='secondary3'>Online</RkText>
+          </View>
+        </TouchableOpacity>
+      )
+    }
   };
+
 
   static renderVideoCall = (navigation,user_name,idRec) => (
     <View>
-      <TouchableOpacity onPress={() => Chat.onAddGroupPressed(navigation, user_name, idRec)}>
-        <Avatar style={styles.avatar} rkType='small' img={require('../../assets/icons/addGroup.png')}/>
-      </TouchableOpacity>
-
       <TouchableOpacity onPress={() => Chat.onVideoCallPressed(navigation, user_name,idRec)}>
-        <Avatar style={styles.avatar} rkType='small' img={require('../../assets/images/videoicon.png')}/>
+        <Avatar style = {{marginRight: 10}} img={require('../../assets/icons/video.png')}/>
       </TouchableOpacity>
     </View>
   );
 
   static renderBack = (navigation,onNavigateBack) => (
     <TouchableOpacity onPress={() => Chat.onBackButtonPressed(navigation,onNavigateBack)}>
-      <Avatar style={styles.back} rkType='small' img={require('../../assets/icons/backicon.png')}/>
+      <Avatar style = {{marginLeft: 10}} img={require('../../assets/icons/back.jpeg')}/>
     </TouchableOpacity>
   );
 
-  renderFriendAvatar = () => (
-      <Avatar style={styles.avatar} rkType='small' img={{uri: 'https://facebook.github.io/react-native/docs/assets/favicon.png'}}/>
-  );
+  renderFriendAvatar = (item) => {
+      return(
+        <Avatar rkType='circle' style = {{marginRight: 5}} img={require('../../assets/icons/ozil.jpg')}/>
+      )
+  }
 
   renderDate = (item) => (
     <RkText style={styles.time} rkType='secondary7 hintColor'>
@@ -252,7 +285,7 @@ export class Chat extends React.Component {
 
     return (
         <View style={[styles.item, itemStyle]}>
-          {isIncoming && this.renderFriendAvatar()}
+          {isIncoming && this.renderFriendAvatar(item)}
           <View>
           <TouchableOpacity onPress = { 
             () => this.processItem(item)

@@ -4,48 +4,70 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
+  Text
 } from 'react-native';
 import _ from 'lodash';
 import {
   RkStyleSheet,
   RkText,
   RkTextInput,
+  RkButton
 } from 'react-native-ui-kitten';
 import { data } from '../../data';
 import { Avatar } from '../../components/avatar';
+import { scale } from '../../utils/scale';
+
+
+import { DeviceEventEmitter } from 'react-native';
+import BKMessProtocolClient from '../../../NativePackage'
 
 
 export class Friends extends React.Component {
   static navigationOptions = {
-    title: 'Friends'.toUpperCase(),
+    title: 'Friends',
+    headerLeft: null
   };
+  
   constructor(props){
     super(props);
     this.state = {
       data: {
-        original: data.getUsers(),
-        filtered: data.getUsers(),
+        original: [],
+        filtered: [],
       },
       username : this.props.navigation.getParam('username', undefined),
+      groupID: this.props.navigation.getParam('groupID', undefined),
     }
-  }
-  state = {
-    data: {
-      original: data.getUsers(),
-      filtered: data.getUsers(),
-    },
+    BKMessProtocolClient.sendRequest(" {\"type\" : \"GET_LIST_FRIENDS\", \"input\" : {\"user_name\": \"" + this.state.username +"\"}} ");
+    DeviceEventEmitter.addListener('LISTENER_RES_LIST_FRIEND', ({res}) => {this.processRes(res)});
   };
 
-  extractItemKey = (item) => `${item.id}`;
+  handleOnNavigateBack() {
+    BKMessProtocolClient.sendRequest(" {\"type\" : \"GET_LIST_FRIENDS\", \"input\" : {\"user_name\": \"" + this.state.username +"\"}} ");
+  }
+
+  processRes(res){
+    const listIB = JSON.parse(res);
+    this.setState({
+      onNavigateBack: this.props.navigation.getParam('onNavigateBack', undefined),
+      data: {
+        original: listIB.output.friends,
+        filtered: listIB.output.friends,
+      },
+    })
+  }
+
+  extractItemKey = (item) => `${item.user_name}`;
+
+
 
   onSearchInputChanged = (event) => {
     const pattern = new RegExp(event.nativeEvent.text, 'i');
     const contacts = _.filter(this.state.data.original, contact => {
       const filterResult = {
-        firstName: contact.firstName.search(pattern),
-        lastName: contact.lastName.search(pattern),
+        username: contact.user_name.search(pattern),
       };
-      return filterResult.firstName !== -1 || filterResult.lastName !== -1 ? contact : undefined;
+      return filterResult.username !== -1  ? contact : undefined;
     });
     this.setState({
       data: {
@@ -53,38 +75,64 @@ export class Friends extends React.Component {
         filtered: contacts,
       },
     });
+    BKMessProtocolClient.sendRequest(" {\"type\" : \"GET_LIST_FRIENDS_OUT_OF_GROUP\", \"input\" : {\"user_name\": \"" + this.state.username + "\", \"group_id\":" + this.state.groupID + "}} ");
   };
 
+  
   onItemPressed = (item) => {
-    this.props.navigation.navigate('ProfileV1', { id: item.id });
+    const navigationParams = {onNavigateBack: this.handleOnNavigateBack.bind(this), username: this.state.username , withReceiverName: item.user_name , idRec : item.idRec, groupID: item.group_id };
+    this.props.navigation.navigate('Chat', navigationParams);
   };
 
   renderItem = ({ item }) => (
-    <TouchableOpacity>
+    <TouchableOpacity onPress = {() => this.onItemPressed(item)}>
       <View style={styles.container}>
-        <Avatar rkType='circle' style={styles.avatar} img={item.photo} />
-        <RkText>{`${item.firstName} ${item.lastName}`}</RkText>
-        {this.renderAddButton(item)}
+        <Avatar rkType='circle' style = {{marginRight: 15}} img={require('../../assets/icons/ozil.jpg')}/>
+        <RkText style = {{ minWidth: scale(180)}}>{`${item.user_name}`}</RkText>
+        {this.renderButton(item)}
       </View>
     </TouchableOpacity>
   );
+
+  renderButton = (item) => {
+    if (item.isGroup == 1){
+      if (item.numOn == 1){
+        return(
+          <Text style = {{color: 'green', marginRight: 20}} >{item.numOn} user is online</Text> 
+        )
+      }
+      if (item.numOn > 1){
+        return(
+          <Text style = {{color: 'green', marginRight: 20}} >{item.numOn} users is online</Text> 
+        )
+      }
+      
+    }
+    else {
+      if (item.status == 1) {
+        return(
+          <Text style = {{color: 'green', marginRight: 20}} >Online</Text> 
+        )
+      }
+    }
+  }
 
   renderSeparator = () => (
     <View style={styles.separator} />
   );
 
-  renderAddButton = (item) => {
-    if (item.isAdded === "False"){
-      return(
-        <RkButton rkType='clear'  onPress={() => this.onAddPress(item)}>
-            <RkText rkType='icon'> Add </RkText>
-          </RkButton>
-      )
-    }
-  }
 
   onAddPress = (item) => {
-    item.isAdded = "True"
+    BKMessProtocolClient.sendRequest(" {\"type\" : \"GET_ADD_MEMBER_TO_GROUP\", \"input\" : {\"user_name\": \"" + item.user_name + "\", \"group_id\":" + this.state.groupID + "}} ");
+    var copyData = this.state.data.original;
+    var foundIndex = copyData.findIndex(x => x.user_name == item.user_name);
+    copyData[foundIndex].isAdded = 1;
+    this.setState({
+      data: {
+        original: copyData,
+        filtered: copyData,
+      },
+    });
   }
 
   renderHeader = () => (

@@ -1,134 +1,121 @@
 import React from 'react';
 import {
-  FlatList,
   View,
-  StyleSheet,
-  TouchableOpacity,
+  Image,
+  Keyboard,
+  Button,
+  Text
 } from 'react-native';
-import _ from 'lodash';
 import {
-  RkStyleSheet,
+  RkButton,
   RkText,
   RkTextInput,
+  RkStyleSheet,
+  RkTheme,
+  RkAvoidKeyboard,
 } from 'react-native-ui-kitten';
-import { data } from '../../data';
-import { Avatar } from '../../components/avatar';
+import { scaleVertical } from '../../utils/scale';
+
+import BKMessProtocolClient from '../../../NativePackage'
+
+import { DeviceEventEmitter } from 'react-native';
 
 
 export class CreateGroup extends React.Component {
   static navigationOptions = {
-    title: 'Group'.toUpperCase(),
+    header: null,
   };
 
   constructor(props){
-    super(props);
+    super(props)
     this.state = {
-      data: {
-        original: data.getUsers(),
-        filtered: data.getUsers(),
-      },
-      username : this.props.navigation.getParam('username', undefined),
+      username: this.props.navigation.getParam('username', undefined),
+      isNull: 0,
+    }
+    DeviceEventEmitter.addListener('LISTENER_RES_CREATE_GROUP', ({res}) => this.processRes(res));
+  }
+
+  processRes(res){
+    const resjson = JSON.parse(res);
+    if (resjson.output.groupId){
+      this.props.navigation.navigate('AddGroup2', {username: this.state.username, groupID: resjson.output.groupId });
     }
   }
 
-  extractItemKey = (item) => `${item.id}`;
-
-  onSearchInputChanged = (event) => {
-    const pattern = new RegExp(event.nativeEvent.text, 'i');
-    const contacts = _.filter(this.state.data.original, contact => {
-      const filterResult = {
-        firstName: contact.firstName.search(pattern),
-        lastName: contact.lastName.search(pattern),
-      };
-      return filterResult.firstName !== -1 || filterResult.lastName !== -1 ? contact : undefined;
-    });
-    this.setState({
-      data: {
-        original: this.state.data.original,
-        filtered: contacts,
-      },
-    });
+  onCreatePressed = () => {
+     if (this.state.groupName == ""){
+        this.setState({
+          isNull : 1,
+        })
+     }
+     else {
+          BKMessProtocolClient.sendRequest(" {\"type\" : \"GET_CREATE_GROUP\", \"input\" : {\"creator\": \"" + this.state.username + "\",\"group_name\": \"" + this.state.groupName + "\"}}");
+     }
   };
 
-  onItemPressed = (item) => {
-    this.props.navigation.navigate('ProfileV1', { id: item.id });
-  };
+ 
 
-  renderItem = ({ item }) => (
-    <TouchableOpacity>
-      <View style={styles.container}>
-        <Avatar rkType='circle' style={styles.avatar} img={item.photo} />
-        <RkText>{`${item.firstName} ${item.lastName}`}</RkText>
-        {this.renderAddButton(item)}
-      </View>
-    </TouchableOpacity>
-  );
-
-  renderSeparator = () => (
-    <View style={styles.separator} />
-  );
-
-  renderAddButton = (item) => {
-    if (item.isAdded === "False"){
-      return(
-        <RkButton rkType='clear'  onPress={() => this.onAddPress(item)}>
-            <RkText rkType='icon'> Add </RkText>
-          </RkButton>
-      )
-    }
+  renderResult(){
+    if (this.state.isNull)
+      return (<Text style={{color: 'red'}}>All fields must be filled!!!</Text>)
   }
-
-  onAddPress = (item) => {
-    item.isAdded = "True"
-  }
-
-  renderHeader = () => (
-    <View style={styles.searchContainer}>
-      <RkTextInput
-        autoCapitalize='none'
-        autoCorrect={false}
-        onChange={this.onSearchInputChanged}
-        rkType='row'
-        placeholder='Search'
-      />
-    </View>
-  );
 
   render = () => (
-    <FlatList
-      style={styles.root}
-      data={this.state.data.filtered}
-      renderItem={this.renderItem}
-      ListHeaderComponent={this.renderHeader}
-      ItemSeparatorComponent={this.renderSeparator}
-      keyExtractor={this.extractItemKey}
-      enableEmptySections
-    />
+    <RkAvoidKeyboard
+    onStartShouldSetResponder={() => true}
+    onResponderRelease={() => Keyboard.dismiss()}
+    style={styles.screen}>
+    <View style={styles.container}>
+    <Text style={{fontWeight: 'bold', fontSize: 25, marginBottom : 15, color : '#000099'}}>CHAT GROUP</Text>
+        <RkTextInput rkType='rounded' placeholder='Enter name of group ...' onChangeText={text => this.setState({groupName:text})} />
+        <RkButton style = {{marginTop: 15}}
+          onPress={() => this.onCreatePressed()}
+        >
+          CREATE
+        </RkButton>
+    </View>
+    </RkAvoidKeyboard>
+
   )
 }
 
 const styles = RkStyleSheet.create(theme => ({
-  root: {
-    backgroundColor: theme.colors.screen.base,
-  },
-  searchContainer: {
-    backgroundColor: theme.colors.screen.bold,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    height: 60,
-    alignItems: 'center',
-  },
-  container: {
-    flexDirection: 'row',
+  screen: {
     padding: 16,
-    alignItems: 'center',
-  },
-  avatar: {
-    marginRight: 16,
-  },
-  separator: {
     flex: 1,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: theme.colors.border.base,
+    justifyContent: 'space-around',
+    backgroundColor: "FF9966",
+  },
+  image: {
+    marginBottom: 10,
+    height: scaleVertical(77),
+    resizeMode: 'contain',
+  },
+
+  container: {
+    paddingHorizontal: 17,
+    paddingBottom: scaleVertical(22),
+    alignItems: 'center',
+    flex: -1,
+  },
+  content: {
+    justifyContent: 'center',
+  },
+  save: {
+    marginVertical: 20,
+  },
+  buttons: {
+    flexDirection: 'row',
+    marginBottom: 12,
+    marginHorizontal: 12,
+    justifyContent: 'space-around',
+  },
+  footer: {
+    marginTop: 40,
+    justifyContent: 'flex-end',
+  },
+  textRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
 }));

@@ -17,16 +17,14 @@ import { data } from '../../data';
 import { Avatar } from '../../components/avatar';
 import { scale } from '../../utils/scale';
 
+import BKMessProtocolClient from '../../../NativePackage'
+
 import { DeviceEventEmitter } from 'react-native';
 
 
-
-import BKMessProtocolClient from '../../../NativePackage'
-
-
-export class AddGroup extends React.Component {
+export class ViewMembers extends React.Component {
   static navigationOptions = {
-    title: 'Add new member',
+    title: 'Group Members',
     headerLeft: null
   };
   
@@ -40,16 +38,16 @@ export class AddGroup extends React.Component {
       username : this.props.navigation.getParam('username', undefined),
       groupID: this.props.navigation.getParam('groupID', undefined),
     }
-    BKMessProtocolClient.sendRequest(" {\"type\" : \"GET_LIST_FRIENDS_OUT_OF_GROUP\", \"input\" : {\"user_name\": \"" + this.state.username + "\", \"group_id\":" + this.state.groupID + "}} ");
-    DeviceEventEmitter.addListener('LISTENER_RES_GET_OUTSIDE_FRIEND', ({res}) => {this.processRes(res)});
+    BKMessProtocolClient.sendRequest(" {\"type\" : \"GET_LIST_MEM_OF_GROUP\", \"input\" : {\"group_id\":" + this.state.groupID + "}} ");
+    DeviceEventEmitter.addListener('LISTENER_RES_GET_MEMBERS_OF_GROUP', ({res}) => {this.processRes(res)});
   };
 
   processRes(res){
     const listIB = JSON.parse(res);
     this.setState({
       data: {
-        original: listIB.output.friends,
-        filtered: listIB.output.friends,
+        original: listIB.output.members,
+        filtered: listIB.output.members,
       },
     })
   }
@@ -83,16 +81,10 @@ export class AddGroup extends React.Component {
   );
 
   renderButton = (item) => {
-    if (item.isAdded === 1){
-      return(
-         <RkButton rkType='clear'> 
-         <Text style = {{color: 'blue'}} >Added</Text> 
-        </RkButton>
-      )
-    }
-    else return (
+    if (item.user_name != this.state.username)
+    return (
       <RkButton rkType='clear'  onPress={() => this.onAddPress(item)}> 
-          <Text style = {{color: 'red'}} >Add</Text> 
+          <Text style = {{color: 'red'}} >Delete</Text> 
         </RkButton>
     )
   }
@@ -103,17 +95,8 @@ export class AddGroup extends React.Component {
 
 
   onAddPress = (item) => {
-    BKMessProtocolClient.sendRequest(" {\"type\" : \"GET_ADD_MEMBER_TO_GROUP\", \"input\" : {\"user_name\": \"" + item.user_name + "\", \"group_id\":" + this.state.groupID + "}} ");
-    var copyData = this.state.data.original;
-    var foundIndex = copyData.findIndex(x => x.user_name == item.user_name);
-    copyData[foundIndex].isAdded = 1;
-    this.setState({
-      data: {
-        original: copyData,
-        filtered: copyData,
-      },
-    });
-    BKMessProtocolClient.sendRequest(" {\"type\" : \"GET_LIST_FRIENDS_OUT_OF_GROUP\", \"input\" : {\"user_name\": \"" + this.state.username + "\", \"group_id\":" + this.state.groupID + "}} ");
+    BKMessProtocolClient.sendRequest(" {\"type\" : \"GET_DELETE_MEMBER\", \"input\" : {\"user_name\": \"" + item.user_name + "\", \"group_id\":" + this.state.groupID + ", \"deletor\": \"" + this.state.username + "\" }} ");
+    BKMessProtocolClient.sendRequest(" {\"type\" : \"GET_LIST_MEM_OF_GROUP\", \"input\" : {\"group_id\":" + this.state.groupID + "}} ");
   }
 
   renderHeader = () => (

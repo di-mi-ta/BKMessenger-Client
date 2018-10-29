@@ -80,6 +80,12 @@ export const MainRoutes = [
         children: [],
       },
       {
+        id: 'AddGroup2',
+        title: 'AddGroup',
+        screen: Screens.AddGroup2,
+        children: [],
+      },
+      {
         id: 'Friends',
         title: 'Friends',
         screen: Screens.Friends,
@@ -91,13 +97,25 @@ export const MainRoutes = [
         screen: Screens.CreateGroup,
         children: [],
       },
+      {
+        id: 'ManageGroup',
+        title: 'Group',
+        screen: Screens.ManageGroup,
+        children: [],
+      },
+      {
+        id: 'ViewMembers',
+        title: 'ViewMembers',
+        screen: Screens.ViewMembers,
+        children: [],
+      },
     ],
   },
 ];
 
 export const SideMenuRoutes = [
   {
-    id: 'LoginV1',
+    id: 'Login1',
     title: 'Log out',
     screen: Screens.LoginV1,
     children: [],
